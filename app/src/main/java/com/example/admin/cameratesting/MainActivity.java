@@ -1,9 +1,13 @@
 package com.example.admin.cameratesting;
 
 import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.provider.MediaStore;
 import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -11,27 +15,31 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 
 public class MainActivity extends ActionBarActivity {
     int CAMERA_PIC_REQUEST = 1337;
+    int GALLERY_PIC_REQUEST = 9090;
     private Bitmap bitmap;
-    private ImageButton imageButton;
+    private ImageView imageButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        imageButton = (ImageButton) findViewById(R.id.result);
+        imageButton = (ImageView) findViewById(R.id.result);
 
-        Button ButtonClick;
+        Button CameraButtonClick;
 
-        ButtonClick =(Button) findViewById(R.id.cameraButton);
-        ButtonClick.setOnClickListener(new OnClickListener (){
+        CameraButtonClick =(Button) findViewById(R.id.cameraButton);
+        CameraButtonClick.setOnClickListener(new OnClickListener (){
             @Override
             public void onClick(View view)
             {
@@ -41,12 +49,25 @@ public class MainActivity extends ActionBarActivity {
             }
         });
 
+        Button GalleryButtonClick;
+
+        GalleryButtonClick = (Button) findViewById(R.id.galleryButton);
+        GalleryButtonClick.setOnClickListener(new OnClickListener(){
+            @Override
+            public void onClick(View view)
+            {
+                Intent galleryIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+
+                startActivityForResult(galleryIntent, GALLERY_PIC_REQUEST);
+            }
+        });
+
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent cameraIntent)
+    protected void onActivityResult(int requestCode, int resultCode, Intent myIntent)
     {
-        if( requestCode == 1337) {
+        if( requestCode == CAMERA_PIC_REQUEST) {
             //  data.getExtras()
             //Bitmap thumbnail = (Bitmap) data.getExtras().get("data");
             /*Now you have received the bitmap..you can pass that bitmap to other activity
@@ -54,11 +75,46 @@ public class MainActivity extends ActionBarActivity {
             and then upload it to server.*/
             // recyle unused bitmaps
 
-            bitmap = (Bitmap) cameraIntent.getExtras().get("data");
+            bitmap = (Bitmap) myIntent.getExtras().get("data");
 
             imageButton.setImageBitmap(bitmap);
             SaveImage(bitmap);
-            super.onActivityResult(requestCode, resultCode, cameraIntent);
+            super.onActivityResult(requestCode, resultCode, myIntent);
+        }
+        else if(requestCode == GALLERY_PIC_REQUEST && resultCode == RESULT_OK
+                && myIntent != null){
+            Uri selectedImage = myIntent.getData();
+            String[] filePathColumn = { MediaStore.Images.Media.DATA };
+            Cursor cursor = getContentResolver().query(selectedImage,
+                    filePathColumn, null, null, null);
+
+            if (cursor == null || cursor.getCount() < 1) {
+                return; // no cursor or no record. DO YOUR ERROR HANDLING
+            }
+
+            cursor.moveToFirst();
+            int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
+
+            if(columnIndex < 0) // no column index
+                return; // DO YOUR ERROR HANDLING
+
+            String picturePath = cursor.getString(columnIndex);
+
+            cursor.close(); // close cursor
+
+            Bitmap photo = (Bitmap) BitmapFactory.decodeFile(picturePath);
+
+            List<Bitmap> bitmap = new ArrayList<Bitmap>();
+            bitmap.add(photo);
+
+            imageButton.setImageBitmap(photo);
+            /*
+            ImageAdapter imageAdapter = new ImageAdapter(
+                    AddIncidentScreen.this, bitmap);
+            imageAdapter.notifyDataSetChanged();
+            newTagImage.setAdapter(imageAdapter);
+*/
+            super.onActivityResult(requestCode, resultCode, myIntent);
         }
     }
 
@@ -75,7 +131,7 @@ public class MainActivity extends ActionBarActivity {
         if (file.exists ()) file.delete ();
         try {
             FileOutputStream out = new FileOutputStream(file);
-            finalBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out);
+            finalBitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
             out.flush();
             out.close();
 
