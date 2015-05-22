@@ -2,6 +2,7 @@ package com.example.admin.cameratesting;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.hardware.Camera;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v7.app.ActionBarActivity;
@@ -10,9 +11,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
-import android.widget.ImageView;
-
-import com.example.admin.camera.R;
+import android.widget.ImageButton;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -22,30 +21,30 @@ import java.util.Random;
 public class MainActivity extends ActionBarActivity {
     int CAMERA_PIC_REQUEST = 1337;
     private Bitmap bitmap;
-    private ImageView imageView;
+    private ImageButton imageButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        imageView = (ImageView) findViewById(R.id.result);
+        imageButton = (ImageButton) findViewById(R.id.result);
 
         Button ButtonClick;
 
         ButtonClick =(Button) findViewById(R.id.cameraButton);
-        ButtonClick.setOnClickListener(new OnClickListener (){
+        ButtonClick.setOnClickListener(new OnClickListener() {
             @Override
-            public void onClick(View view)
-            {
+            public void onClick(View view) {
                 Intent cameraIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
 
                 startActivityForResult(cameraIntent, CAMERA_PIC_REQUEST);
             }
         });
+
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data)
+    protected void onActivityResult(int requestCode, int resultCode, Intent cameraIntent)
     {
         if( requestCode == 1337) {
             //  data.getExtras()
@@ -55,18 +54,19 @@ public class MainActivity extends ActionBarActivity {
             and then upload it to server.*/
             // recyle unused bitmaps
 
-            bitmap = (Bitmap) data.getExtras().get("data");
+            bitmap = (Bitmap) cameraIntent.getExtras().get("data");
 
-            imageView.setImageBitmap(bitmap);
+            imageButton.setImageBitmap(bitmap);
             SaveImage(bitmap);
-            super.onActivityResult(requestCode, resultCode, data);
+            super.onActivityResult(requestCode, resultCode, cameraIntent);
         }
     }
 
     private void SaveImage(Bitmap finalBitmap) {
 
+        String appDirectoryName = "CameraTesting";
         String root = Environment.getExternalStorageDirectory().toString();
-        File myDir = new File(root + "/saved_images");
+        File myDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), appDirectoryName);
         myDir.mkdirs();
         Random generator = new Random();
         int n = 10000;
@@ -109,7 +109,7 @@ public class MainActivity extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
-   /* public static Camera isCameraAvailable(View v){
+    public static Camera isCameraAvailable(View v){
         Camera object = null;
         try {
             object = Camera.open(1);
@@ -119,5 +119,5 @@ public class MainActivity extends ActionBarActivity {
             System.out.println("Camera Exception");
             return object;
         }
-*/
+
 }
